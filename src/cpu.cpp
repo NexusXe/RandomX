@@ -67,17 +67,56 @@ namespace randomx {
 	{
 #ifdef HAVE_CPUID
 		int info[4];
+		bool os_avx512_support = false;
+
 		cpuid(info, 0);
 		int nIds = info[0];
 		if (nIds >= 0x00000001) {
 			cpuid(info, 0x00000001);
 			ssse3_ = (info[2] & (1 << 9)) != 0;
 			aes_ = (info[2] & (1 << 25)) != 0;
+
+			// AVX-512 support
+			// Must have OSXSAVE enabled
+			bool osxsave = (info[2] & (1 << 27)) != 0;
+			if (osxsave) {
+				// Check if OS saves AVX-512 state
+				unsigned long long xcrFeatureMask = _xgetbv(_XCR_XFEATURE_ENABLED_MASK);
+                os_avx512_support = (xcrFeatureMask & 0xE6) == 0xE6;
+			}
 		}
+
 		if (nIds >= 0x00000007) {
 			cpuid(info, 0x00000007);
 			avx2_ = (info[1] & (1 << 5)) != 0;
+
+			if (os_avx512_support) {
+				/*
+				AVX-512 is primarily used to decrease instruction cache and
+				decoder pressure.
+
+				On early Intel implementations of AVX-512, the excessive state
+				transition penalty makes this implementation detrimental to
+				performance.
+
+				However, on Ice Lake/Zen 4 and above, there is little to no
+				state transition penalty for using AVX-512, so using it is
+				overall beneficial.
+
+				VAES support alongside AVX-512F is used to differentiate "poor"
+				implementations from "good" ones.
+				*/
+
+				bool has_vaes = (info[2] & (1 << 9)) != 0;
+
+				if (has_vaes) {
+					// Only auto-enable AVX-512 if "good" implementation detected
+					avx512_ = (info[1] & (1 << 16)) != 0; // AVX-512F
+				}
+			}
 		}
+
+		
 #elif defined(__aarch64__)
 	#if defined(HWCAP_AES)
 		long hwcaps = getauxval(AT_HWCAP);
