@@ -40,6 +40,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 			__cpuid_count(InfoType, 0, info[0], info[1], info[2], info[3]);
 		}
 	#endif
+	#ifndef _XCR_XFEATURE_ENABLED_MASK
+		#define _XCR_XFEATURE_ENABLED_MASK 0
+	#endif
 #endif
 
 #if defined(HAVE_HWCAP)
