@@ -34,7 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	#if defined(_MSC_VER)
 		#include <intrin.h>
 		#define cpuid(info, x) __cpuidex(info, x, 0)
-	#else //GCC
+	#else // GCC/Clang
 		#include <cpuid.h>
 		void cpuid(int info[4], int InfoType) {
 			__cpuid_count(InfoType, 0, info[0], info[1], info[2], info[3]);
